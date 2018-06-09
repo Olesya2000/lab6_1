@@ -2,7 +2,7 @@
 
 using namespace std;
 
-string optimization(Node*, map <string, double>&);
+void optimization(Node*);
 
 bool in_if = false; //
 void read(ifstream& f, vector<Node*>& ast) {
@@ -31,7 +31,6 @@ void read(ifstream& f, vector<Node*>& ast) {
 			if (ch != ' ')
 				s += ch;
 			if (s == "if") {
-				//////////////
 				Node* temp;
 				temp = new Node;
 				temp->val = "?";
@@ -68,12 +67,38 @@ bool is_number(string s) {
 }
 
 bool is_zero(string s) {
-	double x = atof(s.c_str());
-	if (x < 0.0000001)
+	if (s == "0" || s == "0.0" || s == "0.00")
 		return true;
 	return false;
 }
 
+void output(vector<Node*> ast)
+{
+	for (int i = 0; i < ast.size(); i++)
+	{
+		if (ast[i]->val == "«")
+		{
+			cout << "<<";
+			print_inf_bin(ast[i]->sons[1]);
+		}
+		else if (ast[i]->val == "?")
+		{
+			cout << "if (" << ast[i]->sons[0]->val << ")" << endl;
+			for (int j = 1; j < ast[i]->sons.size(); j++)
+			{
+				if (j == 2)
+					cout << "else" << endl;
+				cout << "{" << endl;
+				output(ast[i]->sons[j]->sons);
+				cout << "}" << endl;
+			}
+		}
+
+		else
+			print_inf_bin(ast[i]);
+		cout << ';' << endl;
+	}
+}
 
 string find_rez(Node* ast, map <string, double>& mymap) {
 	if (ast->val == "«")
@@ -100,7 +125,16 @@ string find_rez(Node* ast, map <string, double>& mymap) {
 	}
 	else if(is_operator(ast->val))
 	{
-		return optimization(ast, mymap);
+		string a, b;
+		if (ast->sons[0])
+			a = find_rez(ast->sons[0], mymap);
+		else
+			a = "0";
+		b = find_rez(ast->sons[1], mymap);
+		double rez = calculator(ast->val, atof(a.c_str()), atof(b.c_str()));
+		std::ostringstream ost;
+		ost << rez;
+		return ost.str();
 	}
 	else if (is_number(ast->val)) {
 		return ast->val;
@@ -115,25 +149,28 @@ string find_rez(Node* ast, map <string, double>& mymap) {
 	return "";
 }
 
-string optimization(Node* ast, map <string, double>& mymap) {
+void optimization(Node* ast) {
 
-	if (ast->val == "*" && ast->sons[0]->sons.size() == 0 && is_zero(find_rez(ast->sons[0], mymap)))
-		return "0";
-	if (ast->val == "*" && ast->sons[1]->sons.size() == 0 && is_zero(find_rez(ast->sons[1], mymap)))
-		return "0";
-	if (ast->val == "/" && ast->sons[0]->sons.size() == 0 && is_zero(find_rez(ast->sons[0], mymap)))
-		return "0";
-
-	string a, b;
-	if (ast->sons[0])
-		a = find_rez(ast->sons[0], mymap);
+	if (ast->val == "*" && is_zero(ast->sons[0]->val)) {
+		ast->val = "0";
+		ast->sons.clear();
+	}
 	else
-		a = "0";
-	b = find_rez(ast->sons[1], mymap);
-	double rez = calculator(ast->val, atof(a.c_str()), atof(b.c_str()));
-	std::ostringstream ost;
-	ost << rez;
-	return ost.str();
+	if (ast->val == "*" && is_zero(ast->sons[1]->val)) {
+		ast->val = "0";
+		ast->sons.clear();
+	}
+	else
+	if (ast->val == "/" && is_zero(ast->sons[0]->val))
+	{
+		ast->val = "0";
+		ast->sons.clear();
+	}
+	else {
+		for (int i = 0; i < ast->sons.size(); i++)
+			if (ast->sons[i])
+				optimization(ast->sons[i]);
+	}
 }
 
 int main(int argc, char* argv[])
@@ -143,22 +180,19 @@ int main(int argc, char* argv[])
 	map <string, double> mymap;
 	
 	read(f, ast);
+
+	output(ast);
+
+	cout << endl << endl << endl;
+
+	for (int i = 0; i < ast.size(); i++)
+		if (ast[i])
+			optimization(ast[i]);
+
+	output(ast);
 	for (int i = 0; i < ast.size(); i++)
 		find_rez(ast[i], mymap);
 
-/*
-	for (int i = 0; i < ast.size(); i++)
-	{
-		if (ast[i]->val == "<<")
-		{
-			cout << "<<";
-			print_inf_bin(ast[i]->sons[0]);
-		}
-		else
-			print_inf_bin(ast[i]);
-		cout << ';' << endl;
-	}
-*/
 	system("pause");
 	return 0;
 }

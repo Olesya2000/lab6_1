@@ -1,4 +1,4 @@
-﻿#include "Shunting-yard.h"
+#include "AST.h"
 
 using namespace std;
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 					{
 						for (int j = i + 1; j < st.size(); j++)
 						{
-							if (st[j] == ')') 
+							if (st[j] == ')')
 								break;
 							t += st[j];
 						}
